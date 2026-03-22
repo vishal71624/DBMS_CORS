@@ -2,6 +2,11 @@
 CREATE TABLE IF NOT EXISTS players (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
+  college TEXT,
+  department TEXT,
+  year_of_study TEXT,
+  contact_number TEXT,
+  email TEXT,
   score INTEGER DEFAULT 0,
   round1_score INTEGER DEFAULT 0,
   round2_score INTEGER DEFAULT 0,
