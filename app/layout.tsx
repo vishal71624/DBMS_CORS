@@ -13,7 +13,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Commit or ROLLBACK | DBMS Challenge',
+  title: 'ITRIX 2026 | DBMS Challenge',
   description: 'Test your DBMS skills in this national level symposium event',
   generator: 'v0.app',
   icons: {

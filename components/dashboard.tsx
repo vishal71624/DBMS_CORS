@@ -42,7 +42,7 @@ export function Dashboard() {
           <div className="flex items-center gap-3">
             <Database className="w-8 h-8 text-primary" />
             <div>
-              <h1 className="font-bold text-lg text-foreground">COMMIT or ROLLBACK</h1>
+              <h1 className="font-bold text-lg text-foreground">ITRIX 2026</h1>
               <p className="text-xs text-muted-foreground">IST, CEG, Anna University</p>
             </div>
           </div>

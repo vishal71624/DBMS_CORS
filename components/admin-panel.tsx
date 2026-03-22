@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useGameStore, Question, SQLChallenge, TableData, TableColumn, TestCase } from '@/lib/game-store'
+import { useState, useEffect, useCallback } from 'react'
+import { useGameStore, Question, SQLChallenge, TableData, TableColumn, TestCase, LeaderboardEntry } from '@/lib/game-store'
+import { getLeaderboard } from '@/lib/supabase/db-actions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -49,7 +50,9 @@ import {
   FileQuestion,
   Table,
   Code,
-  Play
+  Play,
+  Crown,
+  Medal
 } from 'lucide-react'
 
 export function AdminPanel() {
@@ -99,6 +102,11 @@ export function AdminPanel() {
   // Round 2 Challenge form state
   const [showR2ChallengeDialog, setShowR2ChallengeDialog] = useState(false)
   const [editingR2Challenge, setEditingR2Challenge] = useState<SQLChallenge | null>(null)
+  
+  // Leaderboard state
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
+  const [isLeaderboardLoading, setIsLeaderboardLoading] = useState(false)
+  const [leaderboardAutoRefresh, setLeaderboardAutoRefresh] = useState(true)
   const [r2Title, setR2Title] = useState('')
   const [r2Description, setR2Description] = useState('')
   const [r2Scenario, setR2Scenario] = useState('')
@@ -109,6 +117,26 @@ export function AdminPanel() {
   const [r2TableColumns, setR2TableColumns] = useState('')
   const [r2TableRows, setR2TableRows] = useState('')
 
+  // Load leaderboard data from database
+  const loadLeaderboardData = useCallback(async () => {
+    setIsLeaderboardLoading(true)
+    try {
+      const allPlayers = await getLeaderboard()
+      const sortedPlayers = allPlayers
+        .sort((a, b) => b.score - a.score)
+        .map((player, index) => ({
+          rank: index + 1,
+          player,
+          totalScore: player.score
+        }))
+      setLeaderboard(sortedPlayers)
+    } catch (error) {
+      console.error('Failed to load leaderboard:', error)
+    } finally {
+      setIsLeaderboardLoading(false)
+    }
+  }, [])
+
   // Load players from database on mount
   useEffect(() => {
     const loadData = async () => {
@@ -117,7 +145,19 @@ export function AdminPanel() {
       setIsLoading(false)
     }
     loadData()
-  }, [loadPlayers])
+    loadLeaderboardData()
+  }, [loadPlayers, loadLeaderboardData])
+  
+  // Auto-refresh leaderboard every 10 seconds
+  useEffect(() => {
+    if (!leaderboardAutoRefresh) return
+    
+    const interval = setInterval(() => {
+      loadLeaderboardData()
+    }, 10000) // 10 seconds
+    
+    return () => clearInterval(interval)
+  }, [leaderboardAutoRefresh, loadLeaderboardData])
 
   const disqualifiedPlayers = players.filter(p => p.isDisqualified).length
   const round1Completed = players.filter(p => p.round1Completed).length
@@ -370,7 +410,7 @@ export function AdminPanel() {
             <Shield className="w-8 h-8 text-primary" />
             <div>
               <h1 className="font-bold text-lg text-foreground">Admin Panel</h1>
-              <p className="text-xs text-muted-foreground">COMMIT or ROLLBACK</p>
+              <p className="text-xs text-muted-foreground">ITRIX 2026</p>
             </div>
           </div>
           
@@ -457,6 +497,10 @@ export function AdminPanel() {
             <TabsTrigger value="round2" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <Code className="w-4 h-4 mr-2" />
               Round 2 Challenges
+            </TabsTrigger>
+            <TabsTrigger value="leaderboard" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <Trophy className="w-4 h-4 mr-2" />
+              Leaderboard
             </TabsTrigger>
           </TabsList>
 
@@ -1110,6 +1154,166 @@ export function AdminPanel() {
             </Card>
           </TabsContent>
 
+          {/* Leaderboard Tab */}
+          <TabsContent value="leaderboard">
+            <Card className="border-border/50 bg-card/80">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-foreground flex items-center gap-2">
+                      <Trophy className="w-5 h-5 text-primary" />
+                      Live Leaderboard
+                    </CardTitle>
+                    <CardDescription>
+                      Real-time player rankings
+                      {leaderboardAutoRefresh && (
+                        <span className="ml-2 text-neon-green">• Auto-refreshing every 10s</span>
+                      )}
+                    </CardDescription>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setLeaderboardAutoRefresh(!leaderboardAutoRefresh)}
+                      className={leaderboardAutoRefresh ? 'border-neon-green/50 text-neon-green' : 'border-muted-foreground/30 text-muted-foreground'}
+                    >
+                      {leaderboardAutoRefresh ? 'Auto-Refresh ON' : 'Auto-Refresh OFF'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={loadLeaderboardData}
+                      disabled={isLeaderboardLoading}
+                      className="border-primary/50 text-primary"
+                    >
+                      {isLeaderboardLoading ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <RefreshCcw className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {isLeaderboardLoading && leaderboard.length === 0 ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                    <span className="ml-2 text-muted-foreground">Loading leaderboard...</span>
+                  </div>
+                ) : leaderboard.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <Trophy className="w-12 h-12 mx-auto mb-4 opacity-30" />
+                    <p>No players on the leaderboard yet</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {leaderboard.map((entry, index) => (
+                      <div 
+                        key={entry.player.id}
+                        className={`flex items-center gap-4 p-4 rounded-lg border transition-all ${
+                          index === 0 
+                            ? 'border-yellow-500/50 bg-yellow-500/5' 
+                            : index === 1 
+                              ? 'border-gray-400/50 bg-gray-400/5'
+                              : index === 2
+                                ? 'border-amber-700/50 bg-amber-700/5'
+                                : 'border-border/50 hover:border-border/80'
+                        }`}
+                      >
+                        {/* Rank */}
+                        <div className="w-12 text-center">
+                          {index === 0 ? (
+                            <Crown className="w-6 h-6 mx-auto text-yellow-500" />
+                          ) : index === 1 ? (
+                            <Medal className="w-6 h-6 mx-auto text-gray-400" />
+                          ) : index === 2 ? (
+                            <Medal className="w-6 h-6 mx-auto text-amber-700" />
+                          ) : (
+                            <span className="text-lg font-bold text-muted-foreground">#{index + 1}</span>
+                          )}
+                        </div>
+
+                        {/* Avatar */}
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
+                          index === 0 
+                            ? 'bg-yellow-500/20 text-yellow-500' 
+                            : index === 1 
+                              ? 'bg-gray-400/20 text-gray-400'
+                              : index === 2
+                                ? 'bg-amber-700/20 text-amber-700'
+                                : 'bg-primary/20 text-primary'
+                        }`}>
+                          {entry.player.name.charAt(0)}
+                        </div>
+
+                        {/* Player Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="font-semibold truncate">{entry.player.name}</p>
+                            <code className="px-2 py-0.5 rounded bg-muted font-mono text-xs text-muted-foreground">
+                              {entry.player.id}
+                            </code>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                            {entry.player.college && (
+                              <span className="flex items-center gap-1">
+                                <Building className="w-3 h-3" />
+                                {entry.player.college}
+                              </span>
+                            )}
+                            {entry.player.department && (
+                              <span>• {entry.player.department}</span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Round Scores */}
+                        <div className="hidden md:flex items-center gap-4 text-sm">
+                          <div className="text-center">
+                            <p className="text-xs text-muted-foreground">R1</p>
+                            <p className="font-mono text-primary">{entry.player.round1Score}</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-xs text-muted-foreground">R2</p>
+                            <p className="font-mono text-accent">{entry.player.round2Score}</p>
+                          </div>
+                        </div>
+
+                        {/* Status */}
+                        <div className="hidden sm:block">
+                          {entry.player.round2Completed ? (
+                            <Badge className="bg-neon-green/20 text-neon-green border-0">R2 Done</Badge>
+                          ) : entry.player.round1Completed ? (
+                            <Badge className="bg-primary/20 text-primary border-0">R1 Done</Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-muted-foreground">In Progress</Badge>
+                          )}
+                        </div>
+
+                        {/* Total Score */}
+                        <div className="text-right">
+                          <p className={`text-xl font-bold ${
+                            index === 0 
+                              ? 'text-yellow-500' 
+                              : index === 1 
+                                ? 'text-gray-400'
+                                : index === 2
+                                  ? 'text-amber-700'
+                                  : 'text-foreground'
+                          }`}>
+                            {entry.totalScore}
+                          </p>
+                          <p className="text-xs text-muted-foreground">points</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
         </Tabs>
       </main>

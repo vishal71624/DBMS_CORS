@@ -29,16 +29,15 @@ export function LandingPage() {
         <header className="flex items-center justify-center p-6 lg:px-12">
           <div className="flex items-center gap-3">
             <Database className="w-8 h-8 text-primary" />
-            <span className="font-mono text-lg font-bold tracking-tight text-foreground">COMMIT or ROLLBACK</span>
+            <span className="font-mono text-lg font-bold tracking-tight text-foreground">ITRIX 2026</span>
           </div>
         </header>
 
         {/* Hero Section */}
         <main className="flex-1 flex flex-col items-center justify-center px-6 text-center">
-          <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight mb-12">
-            <span className="text-foreground">COMMIT</span>
-            <span className="text-muted-foreground mx-4">or</span>
-            <span className="text-primary">ROLLBACK</span>
+<h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight mb-12">
+            <span className="text-primary">ITRIX</span>
+            <span className="text-foreground ml-4">2026</span>
           </h1>
 
           <Button 
