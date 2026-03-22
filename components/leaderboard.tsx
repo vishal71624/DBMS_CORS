@@ -21,12 +21,12 @@ import {
 } from 'lucide-react'
 
 export function Leaderboard() {
-  const { setView, currentPlayer, isAdmin } = useGameStore()
+  const { setView, currentPlayer, isAdmin, players } = useGameStore()
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
   const [animate, setAnimate] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
 
-  // Load ALL players from database on mount
+  // Load ALL players from database on mount, fallback to local store
   const loadLeaderboardData = useCallback(async () => {
     setIsLoading(true)
     try {
@@ -41,11 +41,21 @@ export function Leaderboard() {
         }))
       setLeaderboard(sortedPlayers)
     } catch (error) {
-      console.error('Failed to load leaderboard:', error)
+      console.error('Failed to load leaderboard from DB, using local store:', error)
+      // Fallback to local store data
+      const localPlayers = Object.values(players)
+      const sortedPlayers = localPlayers
+        .sort((a, b) => b.score - a.score)
+        .map((player, index) => ({
+          rank: index + 1,
+          player,
+          totalScore: player.score
+        }))
+      setLeaderboard(sortedPlayers)
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [players])
 
   useEffect(() => {
     loadLeaderboardData()
