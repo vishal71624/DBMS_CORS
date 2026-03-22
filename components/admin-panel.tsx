@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useGameStore, Question, SQLChallenge, TableData, TableColumn, TestCase, LeaderboardEntry } from '@/lib/game-store'
-import { getLeaderboard } from '@/lib/supabase/db-actions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -117,12 +116,12 @@ export function AdminPanel() {
   const [r2TableColumns, setR2TableColumns] = useState('')
   const [r2TableRows, setR2TableRows] = useState('')
 
-  // Load leaderboard data from database
-  const loadLeaderboardData = useCallback(async () => {
+  // Build leaderboard from players data
+  const loadLeaderboardData = useCallback(() => {
     setIsLeaderboardLoading(true)
     try {
-      const allPlayers = await getLeaderboard()
-      const sortedPlayers = allPlayers
+      const sortedPlayers = players
+        .filter(p => !p.isDisqualified)
         .sort((a, b) => b.score - a.score)
         .map((player, index) => ({
           rank: index + 1,
@@ -130,12 +129,10 @@ export function AdminPanel() {
           totalScore: player.score
         }))
       setLeaderboard(sortedPlayers)
-    } catch (error) {
-      console.error('Failed to load leaderboard:', error)
     } finally {
       setIsLeaderboardLoading(false)
     }
-  }, [])
+  }, [players])
 
   // Load players from database on mount
   useEffect(() => {
@@ -145,19 +142,23 @@ export function AdminPanel() {
       setIsLoading(false)
     }
     loadData()
-    loadLeaderboardData()
-  }, [loadPlayers, loadLeaderboardData])
+  }, [loadPlayers])
   
-  // Auto-refresh leaderboard every 10 seconds
+  // Update leaderboard when players change
+  useEffect(() => {
+    loadLeaderboardData()
+  }, [loadLeaderboardData])
+  
+  // Auto-refresh leaderboard every 10 seconds by reloading players
   useEffect(() => {
     if (!leaderboardAutoRefresh) return
     
-    const interval = setInterval(() => {
-      loadLeaderboardData()
+    const interval = setInterval(async () => {
+      await loadPlayers()
     }, 10000) // 10 seconds
     
     return () => clearInterval(interval)
-  }, [leaderboardAutoRefresh, loadLeaderboardData])
+  }, [leaderboardAutoRefresh, loadPlayers])
 
   const disqualifiedPlayers = players.filter(p => p.isDisqualified).length
   const round1Completed = players.filter(p => p.round1Completed).length
@@ -551,8 +552,9 @@ export function AdminPanel() {
                       <thead>
                         <tr className="border-b border-border/50 text-left text-sm text-muted-foreground">
                           <th className="pb-3 font-medium">Student</th>
-                          <th className="pb-3 font-medium">College / Dept</th>
-                          <th className="pb-3 font-medium text-center">Scores</th>
+<th className="pb-3 font-medium">College / Dept</th>
+                        <th className="pb-3 font-medium">Phone</th>
+                        <th className="pb-3 font-medium text-center">Scores</th>
                           <th className="pb-3 font-medium text-center">Status</th>
                           <th className="pb-3 font-medium text-center">R2 Access</th>
                           <th className="pb-3 font-medium text-right">Actions</th>
@@ -585,15 +587,17 @@ export function AdminPanel() {
                             </td>
                             <td className="py-3">
                               <div className="flex flex-col gap-0.5">
-                                {player.college && (
-                                  <span className="text-sm text-foreground flex items-center gap-1">
-                                    <Building className="w-3 h-3 text-accent" />
-                                    {player.college}
-                                  </span>
-                                )}
-                                {player.department && (
-                                  <span className="text-xs text-muted-foreground">{player.department}</span>
-                                )}
+                                <span className="text-sm text-foreground flex items-center gap-1">
+                                  <Building className="w-3 h-3 text-accent" />
+                                  {player.college || '-'}
+                                </span>
+                                <span className="text-xs text-muted-foreground">{player.department || '-'}</span>
+                              </div>
+                            </td>
+                            <td className="py-3">
+                              <div className="flex items-center gap-1">
+                                <Phone className="w-3 h-3 text-muted-foreground" />
+                                <span className="text-sm text-foreground">{player.contactNumber || '-'}</span>
                               </div>
                             </td>
                             <td className="py-3 text-center">
@@ -722,7 +726,7 @@ export function AdminPanel() {
                   <Label htmlFor="student-name">Full Name *</Label>
                   <Input
                     id="student-name"
-                    placeholder="e.g., John Doe"
+                    placeholder=""
                     value={studentName}
                     onChange={(e) => setStudentName(e.target.value)}
                     className="bg-input border-border"
@@ -734,7 +738,7 @@ export function AdminPanel() {
                     <Label htmlFor="student-college">College</Label>
                     <Input
                       id="student-college"
-                      placeholder="e.g., ABC College"
+                      placeholder=""
                       value={studentCollege}
                       onChange={(e) => setStudentCollege(e.target.value)}
                       className="bg-input border-border"
@@ -744,7 +748,7 @@ export function AdminPanel() {
                     <Label htmlFor="student-dept">Department</Label>
                     <Input
                       id="student-dept"
-                      placeholder="e.g., Computer Science"
+                      placeholder=""
                       value={studentDepartment}
                       onChange={(e) => setStudentDepartment(e.target.value)}
                       className="bg-input border-border"
@@ -757,7 +761,7 @@ export function AdminPanel() {
                     <Label htmlFor="student-year">Year</Label>
                     <Input
                       id="student-year"
-                      placeholder="e.g., 3rd"
+                      placeholder=""
                       value={studentYear}
                       onChange={(e) => setStudentYear(e.target.value)}
                       className="bg-input border-border"
@@ -767,7 +771,7 @@ export function AdminPanel() {
                     <Label htmlFor="student-contact">Contact</Label>
                     <Input
                       id="student-contact"
-                      placeholder="9876543210"
+                      placeholder=""
                       value={studentContact}
                       onChange={(e) => setStudentContact(e.target.value)}
                       className="bg-input border-border"
@@ -777,7 +781,7 @@ export function AdminPanel() {
                     <Label htmlFor="student-email">Email</Label>
                     <Input
                       id="student-email"
-                      placeholder="john@email.com"
+                      placeholder=""
                       value={studentEmail}
                       onChange={(e) => setStudentEmail(e.target.value)}
                       className="bg-input border-border"
@@ -1250,22 +1254,14 @@ export function AdminPanel() {
 
                         {/* Player Info */}
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className="font-semibold truncate">{entry.player.name}</p>
-                            <code className="px-2 py-0.5 rounded bg-muted font-mono text-xs text-muted-foreground">
-                              {entry.player.id}
-                            </code>
-                          </div>
+                          <p className="font-semibold truncate">{entry.player.name}</p>
                           <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                            {entry.player.college && (
-                              <span className="flex items-center gap-1">
-                                <Building className="w-3 h-3" />
-                                {entry.player.college}
-                              </span>
-                            )}
-                            {entry.player.department && (
-                              <span>• {entry.player.department}</span>
-                            )}
+                            <span className="flex items-center gap-1">
+                              <Building className="w-3 h-3" />
+                              {entry.player.college || '-'}
+                            </span>
+                            <span>• {entry.player.department || '-'}</span>
+                            <span>• {entry.player.yearOfStudy || '-'}</span>
                           </div>
                         </div>
 
