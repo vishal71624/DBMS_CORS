@@ -154,7 +154,11 @@ export function AdminPanel() {
     if (!leaderboardAutoRefresh) return
     
     const interval = setInterval(async () => {
-      await loadPlayers()
+      try {
+        await loadPlayers()
+      } catch {
+        // Silently handle fetch errors during auto-refresh
+      }
     }, 10000) // 10 seconds
     
     return () => clearInterval(interval)
