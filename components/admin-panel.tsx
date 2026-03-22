@@ -376,15 +376,6 @@ export function AdminPanel() {
           
           <div className="flex items-center gap-4">
             <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => setView('leaderboard')}
-              className="border-primary/50 text-primary hover:bg-primary/10"
-            >
-              <Trophy className="w-4 h-4 mr-2" />
-              Leaderboard
-            </Button>
-            <Button 
               variant="ghost" 
               size="sm"
               onClick={logout}
