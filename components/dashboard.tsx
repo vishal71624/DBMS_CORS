@@ -43,7 +43,7 @@ export function Dashboard() {
             <Database className="w-8 h-8 text-primary" />
             <div>
               <h1 className="font-bold text-lg text-foreground">COMMIT or ROLLBACK</h1>
-              <p className="text-xs text-muted-foreground">ITRIX 2026</p>
+              <p className="text-xs text-muted-foreground">IST, CEG, Anna University</p>
             </div>
           </div>
           

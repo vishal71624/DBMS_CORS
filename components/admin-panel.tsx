@@ -35,9 +35,9 @@ import {
   Unlock,
   Lock,
   CheckCircle2,
-  Upload,
   Loader2,
   Search,
+  Shuffle,
   GraduationCap,
   Building,
   Phone,
@@ -72,10 +72,8 @@ export function AdminPanel() {
     deleteRound2Challenge
   } = useGameStore()
 
-  const [newPlayerCode, setNewPlayerCode] = useState('')
+  const [generatedCode, setGeneratedCode] = useState('')
   const [copiedId, setCopiedId] = useState<string | null>(null)
-  const [bulkCodes, setBulkCodes] = useState('')
-  const [isAddingBulk, setIsAddingBulk] = useState(false)
   const [addedCount, setAddedCount] = useState(0)
   const [searchQuery, setSearchQuery] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -134,15 +132,34 @@ export function AdminPanel() {
     (p.email && p.email.toLowerCase().includes(searchQuery.toLowerCase()))
   )
 
-  const handleAddPlayer = () => {
-    if (!newPlayerCode.trim()) return
-    const exists = players.find(p => p.id === newPlayerCode.toUpperCase().trim())
+  // Generate a random unique student code
+  const generateRandomCode = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+    let code = 'IST'
+    for (let i = 0; i < 5; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length))
+    }
+    // Check if code already exists, regenerate if so
+    const exists = players.find(p => p.id === code)
     if (exists) {
-      alert('Player with this code already exists!')
+      return generateRandomCode() // Recursively generate new code if exists
+    }
+    setGeneratedCode(code)
+    return code
+  }
+
+  const handleAddPlayer = () => {
+    if (!generatedCode.trim()) {
+      alert('Please generate a student code first!')
       return
     }
-    addPlayer(newPlayerCode.trim(), {
-      name: studentName || newPlayerCode.trim(),
+    const exists = players.find(p => p.id === generatedCode.toUpperCase().trim())
+    if (exists) {
+      alert('Player with this code already exists! Please generate a new code.')
+      return
+    }
+    addPlayer(generatedCode.trim(), {
+      name: studentName || generatedCode.trim(),
       college: studentCollege,
       department: studentDepartment,
       yearOfStudy: studentYear,
@@ -150,7 +167,7 @@ export function AdminPanel() {
       email: studentEmail,
     })
     // Reset form
-    setNewPlayerCode('')
+    setGeneratedCode('')
     setStudentName('')
     setStudentCollege('')
     setStudentDepartment('')
@@ -159,31 +176,6 @@ export function AdminPanel() {
     setStudentEmail('')
     setAddedCount(1)
     setTimeout(() => setAddedCount(0), 2000)
-  }
-
-  const handleBulkAdd = async () => {
-    if (!bulkCodes.trim()) return
-    setIsAddingBulk(true)
-    
-    const codes = bulkCodes
-      .split(/[\n,\s]+/)
-      .map(code => code.trim().toUpperCase())
-      .filter(code => code.length > 0)
-    
-    let added = 0
-    for (const code of codes) {
-      const exists = players.find(p => p.id === code)
-      if (!exists) {
-        addPlayer(code)
-        added++
-        await new Promise(resolve => setTimeout(resolve, 100))
-      }
-    }
-    
-    setAddedCount(added)
-    setBulkCodes('')
-    setIsAddingBulk(false)
-    setTimeout(() => setAddedCount(0), 3000)
   }
 
   const copyToClipboard = async (text: string, id: string) => {
@@ -378,7 +370,7 @@ export function AdminPanel() {
             <Shield className="w-8 h-8 text-primary" />
             <div>
               <h1 className="font-bold text-lg text-foreground">Admin Panel</h1>
-              <p className="text-xs text-muted-foreground">ITRIX 2026</p>
+              <p className="text-xs text-muted-foreground">COMMIT or ROLLBACK</p>
             </div>
           </div>
           
@@ -648,160 +640,133 @@ export function AdminPanel() {
 
           {/* Add Student Tab */}
           <TabsContent value="add">
-            <div className="grid lg:grid-cols-2 gap-6">
-              <Card className="border-border/50 bg-card/80">
-                <CardHeader>
-                  <CardTitle className="text-foreground flex items-center gap-2">
-                    <UserPlus className="w-5 h-5 text-primary" />
-                    Add Student with Details
-                  </CardTitle>
-                  <CardDescription>Register a student with complete information</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="player-code">Student Code *</Label>
-                      <Input
-                        id="player-code"
-                        placeholder="e.g., ITRIX001"
-                        value={newPlayerCode}
-                        onChange={(e) => setNewPlayerCode(e.target.value.toUpperCase())}
-                        className="bg-input border-border font-mono uppercase"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="student-name">Full Name</Label>
-                      <Input
-                        id="student-name"
-                        placeholder="e.g., John Doe"
-                        value={studentName}
-                        onChange={(e) => setStudentName(e.target.value)}
-                        className="bg-input border-border"
-                      />
-                    </div>
+            <Card className="border-border/50 bg-card/80 max-w-2xl mx-auto">
+              <CardHeader>
+                <CardTitle className="text-foreground flex items-center gap-2">
+                  <UserPlus className="w-5 h-5 text-primary" />
+                  Add Student
+                </CardTitle>
+                <CardDescription>Register a student with auto-generated unique code</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Generated Code Section */}
+                <div className="p-4 rounded-lg border border-primary/30 bg-primary/5">
+                  <Label className="text-sm text-muted-foreground mb-2 block">Student Access Code</Label>
+                  <div className="flex items-center gap-3">
+                    <code className="flex-1 px-4 py-3 rounded bg-muted font-mono text-lg text-foreground tracking-wider text-center">
+                      {generatedCode || 'Click to generate'}
+                    </code>
+                    <Button 
+                      type="button"
+                      variant="outline"
+                      onClick={generateRandomCode}
+                      className="border-primary/50 text-primary hover:bg-primary/10"
+                    >
+                      <Shuffle className="w-4 h-4 mr-2" />
+                      Generate
+                    </Button>
+                    {generatedCode && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => copyToClipboard(generatedCode, 'generated')}
+                      >
+                        {copiedId === 'generated' ? (
+                          <Check className="w-4 h-4 text-neon-green" />
+                        ) : (
+                          <Copy className="w-4 h-4" />
+                        )}
+                      </Button>
+                    )}
                   </div>
+                  <p className="text-xs text-muted-foreground mt-2">This code will be used by the student to login. Share it securely.</p>
+                </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="student-college">College</Label>
-                      <Input
-                        id="student-college"
-                        placeholder="e.g., ABC College"
-                        value={studentCollege}
-                        onChange={(e) => setStudentCollege(e.target.value)}
-                        className="bg-input border-border"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="student-dept">Department</Label>
-                      <Input
-                        id="student-dept"
-                        placeholder="e.g., Computer Science"
-                        value={studentDepartment}
-                        onChange={(e) => setStudentDepartment(e.target.value)}
-                        className="bg-input border-border"
-                      />
-                    </div>
-                  </div>
+                {/* Student Details */}
+                <div className="space-y-2">
+                  <Label htmlFor="student-name">Full Name *</Label>
+                  <Input
+                    id="student-name"
+                    placeholder="e.g., John Doe"
+                    value={studentName}
+                    onChange={(e) => setStudentName(e.target.value)}
+                    className="bg-input border-border"
+                  />
+                </div>
 
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="student-year">Year</Label>
-                      <Input
-                        id="student-year"
-                        placeholder="e.g., 3rd"
-                        value={studentYear}
-                        onChange={(e) => setStudentYear(e.target.value)}
-                        className="bg-input border-border"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="student-contact">Contact</Label>
-                      <Input
-                        id="student-contact"
-                        placeholder="9876543210"
-                        value={studentContact}
-                        onChange={(e) => setStudentContact(e.target.value)}
-                        className="bg-input border-border"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="student-email">Email</Label>
-                      <Input
-                        id="student-email"
-                        placeholder="john@email.com"
-                        value={studentEmail}
-                        onChange={(e) => setStudentEmail(e.target.value)}
-                        className="bg-input border-border"
-                      />
-                    </div>
-                  </div>
-
-                  <Button 
-                    onClick={handleAddPlayer}
-                    disabled={!newPlayerCode.trim()}
-                    className="w-full bg-primary text-primary-foreground"
-                  >
-                    <UserPlus className="w-4 h-4 mr-2" />
-                    Add Student
-                  </Button>
-
-                  {addedCount === 1 && (
-                    <div className="flex items-center gap-2 text-neon-green text-sm">
-                      <CheckCircle2 className="w-4 h-4" />
-                      Student added successfully!
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card className="border-border/50 bg-card/80">
-                <CardHeader>
-                  <CardTitle className="text-foreground flex items-center gap-2">
-                    <Upload className="w-5 h-5 text-accent" />
-                    Bulk Add Students
-                  </CardTitle>
-                  <CardDescription>Add multiple students at once</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="bulk-codes">Student Codes</Label>
-                    <Textarea
-                      id="bulk-codes"
-                      placeholder={"Enter codes separated by comma, space, or new line:\n\nITRIX001\nITRIX002\nITRIX003"}
-                      value={bulkCodes}
-                      onChange={(e) => setBulkCodes(e.target.value)}
-                      className="bg-input border-border font-mono min-h-32"
+                    <Label htmlFor="student-college">College</Label>
+                    <Input
+                      id="student-college"
+                      placeholder="e.g., ABC College"
+                      value={studentCollege}
+                      onChange={(e) => setStudentCollege(e.target.value)}
+                      className="bg-input border-border"
                     />
                   </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="student-dept">Department</Label>
+                    <Input
+                      id="student-dept"
+                      placeholder="e.g., Computer Science"
+                      value={studentDepartment}
+                      onChange={(e) => setStudentDepartment(e.target.value)}
+                      className="bg-input border-border"
+                    />
+                  </div>
+                </div>
 
-                  <Button 
-                    onClick={handleBulkAdd}
-                    disabled={!bulkCodes.trim() || isAddingBulk}
-                    className="w-full bg-accent text-accent-foreground"
-                  >
-                    {isAddingBulk ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Adding...
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="w-4 h-4 mr-2" />
-                        Add All Students
-                      </>
-                    )}
-                  </Button>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="student-year">Year</Label>
+                    <Input
+                      id="student-year"
+                      placeholder="e.g., 3rd"
+                      value={studentYear}
+                      onChange={(e) => setStudentYear(e.target.value)}
+                      className="bg-input border-border"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="student-contact">Contact</Label>
+                    <Input
+                      id="student-contact"
+                      placeholder="9876543210"
+                      value={studentContact}
+                      onChange={(e) => setStudentContact(e.target.value)}
+                      className="bg-input border-border"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="student-email">Email</Label>
+                    <Input
+                      id="student-email"
+                      placeholder="john@email.com"
+                      value={studentEmail}
+                      onChange={(e) => setStudentEmail(e.target.value)}
+                      className="bg-input border-border"
+                    />
+                  </div>
+                </div>
 
-                  {addedCount > 1 && (
-                    <div className="flex items-center gap-2 text-neon-green text-sm">
-                      <CheckCircle2 className="w-4 h-4" />
-                      {addedCount} students added successfully!
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
+                <Button 
+                  onClick={handleAddPlayer}
+                  disabled={!generatedCode.trim() || !studentName.trim()}
+                  className="w-full bg-primary text-primary-foreground"
+                >
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  Add Student
+                </Button>
+
+                {addedCount === 1 && (
+                  <div className="flex items-center gap-2 text-neon-green text-sm">
+                    <CheckCircle2 className="w-4 h-4" />
+                    Student added successfully!
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Round 1 Questions Tab */}

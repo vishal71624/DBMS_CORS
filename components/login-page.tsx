@@ -41,7 +41,7 @@ export function LoginPage() {
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 relative overflow-hidden">
       {/* Background effects */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(0,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(0,255,255,0.02)_1px,transparent_1px)] bg-[size:40px_40px]" />
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(0,255,255,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(0,255,255,0.06)_1px,transparent_1px)] bg-[size:50px_50px] [mask-image:radial-gradient(ellipse_80%_80%_at_50%_50%,black_40%,transparent_100%)]" />
       <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-primary/10 rounded-full blur-[150px]" />
 
       <div className="relative z-10 w-full max-w-sm">
@@ -60,7 +60,7 @@ export function LoginPage() {
           <Database className="w-10 h-10 text-primary" />
           <div className="text-center">
             <h1 className="text-2xl font-bold tracking-tight text-foreground">COMMIT or ROLLBACK</h1>
-            <p className="text-sm text-muted-foreground">ITRIX 2026</p>
+            <p className="text-sm text-muted-foreground">IST, CEG, Anna University</p>
           </div>
         </div>
 

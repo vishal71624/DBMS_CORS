@@ -18,7 +18,7 @@ export function LandingPage() {
   return (
     <div className="min-h-screen bg-background relative overflow-hidden flex flex-col">
       {/* Animated background grid */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(0,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,255,255,0.03)_1px,transparent_1px)] bg-[size:50px_50px]" />
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(0,255,255,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(0,255,255,0.08)_1px,transparent_1px)] bg-[size:60px_60px] [mask-image:radial-gradient(ellipse_80%_80%_at_50%_50%,black_40%,transparent_100%)]" />
       
       {/* Glow effects */}
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/20 rounded-full blur-[120px] animate-pulse" />
@@ -29,7 +29,7 @@ export function LandingPage() {
         <header className="flex items-center justify-center p-6 lg:px-12">
           <div className="flex items-center gap-3">
             <Database className="w-8 h-8 text-primary" />
-            <span className="font-mono text-lg font-bold tracking-tight text-foreground">ITRIX 2026</span>
+            <span className="font-mono text-lg font-bold tracking-tight text-foreground">COMMIT or ROLLBACK</span>
           </div>
         </header>
 
@@ -53,7 +53,7 @@ export function LandingPage() {
 
         {/* Footer */}
         <footer className="py-6 text-center text-sm text-muted-foreground">
-          <p>ITRIX 2026 - National Level Technical Symposium</p>
+          <p>Department of Information Science and Technology, CEG, Anna University</p>
         </footer>
       </div>
     </div>

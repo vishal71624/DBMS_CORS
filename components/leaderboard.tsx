@@ -67,7 +67,7 @@ export function Leaderboard() {
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
       {/* Animated background */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(0,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(0,255,255,0.02)_1px,transparent_1px)] bg-[size:60px_60px]" />
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(0,255,255,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(0,255,255,0.06)_1px,transparent_1px)] bg-[size:60px_60px] [mask-image:radial-gradient(ellipse_80%_80%_at_50%_50%,black_40%,transparent_100%)]" />
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-primary/10 rounded-full blur-[150px]" />
 
       <div className="relative z-10">
@@ -230,7 +230,16 @@ export function Leaderboard() {
                           <Badge variant="outline" className="ml-2 text-xs border-primary/50 text-primary">You</Badge>
                         )}
                       </p>
-                      <p className="text-xs text-muted-foreground">Player Code: {entry.player.id}</p>
+                      {/* Only show player code to admins or to the player themselves */}
+                      {isAdmin ? (
+                        <p className="text-xs text-muted-foreground">Code: {entry.player.id}</p>
+                      ) : entry.player.id === currentPlayer?.id ? (
+                        <p className="text-xs text-muted-foreground">Your Code: {entry.player.id}</p>
+                      ) : entry.player.college ? (
+                        <p className="text-xs text-muted-foreground">{entry.player.college}</p>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">Participant</p>
+                      )}
                     </div>
 
                     {/* Round Scores */}
